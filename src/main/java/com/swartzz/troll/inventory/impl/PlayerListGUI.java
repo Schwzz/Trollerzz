@@ -13,6 +13,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -77,9 +78,8 @@ public class PlayerListGUI extends InventoryGUI {
                             .openGUI(new PlayerListGUI(plugin, page - 1), (Player) e.getWhoClicked())));
         }
 
-        ItemStack close = buildClose();
         addButton(49, new InventoryButton()
-                .creator(p -> close)
+                .creator(p -> buildClose())
                 .consumer(e -> e.getWhoClicked().closeInventory()));
 
         if (page < totalPages - 1) {
@@ -94,7 +94,13 @@ public class PlayerListGUI extends InventoryGUI {
     }
 
     private ItemStack buildPlayerHead(Player player) {
-        ItemStack skull = XSkull.createItem().profile(Profileable.detect(player.getName())).apply();
+        ItemStack skull;
+        try {
+            skull = XSkull.createItem().profile(Profileable.of(player)).apply();
+        } catch (Exception ex) {
+            skull = new ItemStack(Material.PLAYER_HEAD);
+        }
+        if (skull == null) skull = new ItemStack(Material.PLAYER_HEAD);
         ItemMeta meta = skull.getItemMeta();
         if (meta != null) {
             meta.setDisplayName(ChatColor.YELLOW + "" + ChatColor.BOLD + player.getName());

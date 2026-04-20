@@ -8,9 +8,9 @@ import java.util.List;
 @Getter
 public enum TrollType {
 
-    FLIP("Flip", "OAK_DOOR", Arrays.asList(
-            "&7Rotates the player &f180°",
-            "&7when walking through doors."
+    FLIP("Flip", "COMPASS", Arrays.asList(
+            "&7Flips the player's view &f180°",
+            "&7whenever they interact with any block."
     )),
     TNT("TNT Rain", "TNT", Arrays.asList(
             "&7Primed TNT spawns near",
@@ -31,8 +31,28 @@ public enum TrollType {
     )),
     HAUNT("Haunt", "VILLAGER_SPAWN_EGG", Arrays.asList(
             "&7A stalker villager follows",
-            "&7the player and &fdisappears",
-            "&7when looked at."
+            "&7the player, plays a &fscream",
+            "&7and vanishes when looked at."
+    )),
+    HOTBAR_SHUFFLE("Hotbar Shuffle", "CHEST", Arrays.asList(
+            "&7Randomly rearranges",
+            "&7the player's hotbar",
+            "&7every &f5 seconds&7."
+    )),
+    SHIELD_DROP("Shield Drop", "SHIELD", Arrays.asList(
+            "&7Forces the player to drop",
+            "&7their shield the moment",
+            "&7they try to block with it."
+    )),
+    GAPPLE_TRAP("Gapple Trap", "GOLDEN_APPLE", Arrays.asList(
+            "&7Applies &fBlindness &7and &fWeakness",
+            "&7when the player eats a",
+            "&7Golden Apple or Golden Carrot."
+    )),
+    VEGETARIAN_CURSE("Vegetarian Curse", "DRIED_KELP", Arrays.asList(
+            "&7Replaces any meat the player",
+            "&7eats with &fDried Kelp&7",
+            "&7the moment they finish eating."
     ));
 
     private final String displayName;

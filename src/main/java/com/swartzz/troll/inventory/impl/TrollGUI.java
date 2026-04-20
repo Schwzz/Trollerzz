@@ -22,7 +22,10 @@ public class TrollGUI extends InventoryGUI {
     private final TrollPlugin plugin;
     private final Player target;
 
-    private static final int[] TROLL_SLOTS = {11, 13, 15, 20, 22, 24};
+    private static final int[] TROLL_SLOTS = {
+            10, 11, 12, 13, 14,
+            19, 20, 21, 22, 23
+    };
 
     public TrollGUI(TrollPlugin plugin, Player target) {
         this.plugin = plugin;
@@ -31,14 +34,14 @@ public class TrollGUI extends InventoryGUI {
 
     @Override
     protected Inventory createInventory() {
-        return Bukkit.createInventory(null, 36,
+        return Bukkit.createInventory(null, 45,
                 ChatColor.DARK_RED + "Trolling: " + ChatColor.RED + target.getName());
     }
 
     @Override
     public void decorate(Player viewer) {
         ItemStack filler = buildFiller();
-        for (int i = 0; i < 36; i++) {
+        for (int i = 0; i < 45; i++) {
             final ItemStack f = filler.clone();
             addButton(i, new InventoryButton()
                     .creator(p -> f)
@@ -46,7 +49,7 @@ public class TrollGUI extends InventoryGUI {
         }
 
         TrollType[] types = TrollType.values();
-        for (int i = 0; i < types.length; i++) {
+        for (int i = 0; i < types.length && i < TROLL_SLOTS.length; i++) {
             final TrollType type = types[i];
             addButton(TROLL_SLOTS[i], new InventoryButton()
                     .creator(p -> buildTrollItem(type))
@@ -57,9 +60,8 @@ public class TrollGUI extends InventoryGUI {
                     }));
         }
 
-        ItemStack closeItem = buildClose();
-        addButton(31, new InventoryButton()
-                .creator(p -> closeItem)
+        addButton(40, new InventoryButton()
+                .creator(p -> buildClose())
                 .consumer(e -> e.getWhoClicked().closeInventory()));
 
         super.decorate(viewer);

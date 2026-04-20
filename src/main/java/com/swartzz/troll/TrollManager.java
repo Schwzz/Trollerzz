@@ -3,17 +3,21 @@ package com.swartzz.troll;
 import com.cryptomorin.xseries.XSound;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TNTPrimed;
 import org.bukkit.entity.Villager;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -26,7 +30,9 @@ public class TrollManager {
     private final Map<UUID, BukkitTask> soundTasks = new HashMap<>();
     private final Map<UUID, BukkitTask> tntTasks = new HashMap<>();
     private final Map<UUID, BukkitTask> hauntTasks = new HashMap<>();
+    private final Map<UUID, BukkitTask> hotbarTasks = new HashMap<>();
     private final Map<UUID, UUID> hauntVillagers = new HashMap<>();
+    private final Set<UUID> hauntCooldowns = new HashSet<>();
     private final Random random = new Random();
 
     private static final String[] AMBIENT_SOUNDS = {
@@ -67,6 +73,7 @@ public class TrollManager {
             case SOUND -> startSoundTask(target);
             case TNT -> startTNTTask(target);
             case HAUNT -> startHauntTask(target);
+            case HOTBAR_SHUFFLE -> startHotbarShuffleTask(target);
             default -> {}
         }
     }
@@ -79,7 +86,9 @@ public class TrollManager {
             case HAUNT -> {
                 cancelTask(hauntTasks, target.getUniqueId());
                 removeHauntVillager(target.getUniqueId());
+                hauntCooldowns.remove(target.getUniqueId());
             }
+            case HOTBAR_SHUFFLE -> cancelTask(hotbarTasks, target.getUniqueId());
             default -> {}
         }
     }
@@ -88,20 +97,17 @@ public class TrollManager {
         UUID uuid = target.getUniqueId();
         TrollData data = playerData.get(uuid);
         if (data == null) return;
-        Set<TrollType> copy = EnumSet.copyOf(data.getActiveTrolls().isEmpty()
-                ? EnumSet.noneOf(TrollType.class) : data.getActiveTrolls());
-        for (TrollType type : copy) {
+        Set<TrollType> activeCopy = data.getActiveTrolls().isEmpty()
+                ? EnumSet.noneOf(TrollType.class)
+                : EnumSet.copyOf(data.getActiveTrolls());
+        for (TrollType type : activeCopy) {
             disableTroll(target, type);
         }
         playerData.remove(uuid);
     }
 
     public void onPlayerQuit(Player player) {
-        UUID uuid = player.getUniqueId();
-        cancelTask(soundTasks, uuid);
-        cancelTask(tntTasks, uuid);
-        cancelTask(hauntTasks, uuid);
-        removeHauntVillager(uuid);
+        resetTrolls(player);
     }
 
     public void onPlayerJoin(Player player) {
@@ -112,6 +118,7 @@ public class TrollManager {
                 case SOUND -> startSoundTask(player);
                 case TNT -> startTNTTask(player);
                 case HAUNT -> startHauntTask(player);
+                case HOTBAR_SHUFFLE -> startHotbarShuffleTask(player);
                 default -> {}
             }
         }
@@ -188,10 +195,22 @@ public class TrollManager {
                 cancelTask(hauntTasks, uuid);
                 return;
             }
-            if (isLookingAt(pl, v)) {
-                Location newLoc = getRandomNearbyLocation(pl.getLocation(), 10, 15);
-                v.teleport(newLoc);
-            } else {
+            if (!hauntCooldowns.contains(uuid) && isLookingAt(pl, v)) {
+                XSound.matchXSound("ENTITY_ENDERMAN_SCREAM").ifPresent(s -> s.play(pl));
+                Location farLoc = getRandomNearbyLocation(pl.getLocation(), 25, 35);
+                v.teleport(farLoc);
+                hauntCooldowns.add(uuid);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    hauntCooldowns.remove(uuid);
+                    Player returnTarget = Bukkit.getPlayer(uuid);
+                    UUID returnVillagerUID = hauntVillagers.get(uuid);
+                    if (returnTarget == null || !returnTarget.isOnline() || returnVillagerUID == null) return;
+                    Entity returnVillager = Bukkit.getEntity(returnVillagerUID);
+                    if (returnVillager == null || returnVillager.isDead()) return;
+                    Location returnLoc = getRandomNearbyLocation(returnTarget.getLocation(), 6, 10);
+                    returnVillager.teleport(returnLoc);
+                }, 60L);
+            } else if (!hauntCooldowns.contains(uuid)) {
                 double dist = v.getLocation().distance(pl.getLocation());
                 if (dist > 6) {
                     Vector dir = pl.getLocation().getDirection().normalize();
@@ -202,6 +221,29 @@ public class TrollManager {
             }
         }, 10L, 10L);
         hauntTasks.put(uuid, task);
+    }
+
+    private void startHotbarShuffleTask(Player target) {
+        UUID uuid = target.getUniqueId();
+        cancelTask(hotbarTasks, uuid);
+        BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            Player p = Bukkit.getPlayer(uuid);
+            if (p == null || !p.isOnline()) {
+                cancelTask(hotbarTasks, uuid);
+                return;
+            }
+            ItemStack[] hotbar = new ItemStack[9];
+            for (int i = 0; i < 9; i++) {
+                hotbar[i] = p.getInventory().getItem(i);
+            }
+            ArrayList<ItemStack> items = new ArrayList<>(Arrays.asList(hotbar));
+            Collections.shuffle(items, random);
+            for (int i = 0; i < 9; i++) {
+                p.getInventory().setItem(i, items.get(i));
+            }
+            p.updateInventory();
+        }, 100L, 100L);
+        hotbarTasks.put(uuid, task);
     }
 
     private boolean isLookingAt(Player player, Entity entity) {
@@ -238,14 +280,17 @@ public class TrollManager {
         soundTasks.values().forEach(BukkitTask::cancel);
         tntTasks.values().forEach(BukkitTask::cancel);
         hauntTasks.values().forEach(BukkitTask::cancel);
+        hotbarTasks.values().forEach(BukkitTask::cancel);
         soundTasks.clear();
         tntTasks.clear();
         hauntTasks.clear();
+        hotbarTasks.clear();
         hauntVillagers.forEach((playerUUID, villagerUUID) -> {
             Entity e = Bukkit.getEntity(villagerUUID);
             if (e != null) e.remove();
         });
         hauntVillagers.clear();
+        hauntCooldowns.clear();
         playerData.clear();
     }
 }
