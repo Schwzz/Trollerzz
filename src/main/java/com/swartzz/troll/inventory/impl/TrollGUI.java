@@ -22,9 +22,12 @@ public class TrollGUI extends InventoryGUI {
     private final TrollPlugin plugin;
     private final Player target;
 
+    // 13 trolls laid out across 3 rows of 5 in a 54-slot inventory
+    // Rows 1-3 at positions 10-14, 19-23, 28-32 (with border padding)
     private static final int[] TROLL_SLOTS = {
             10, 11, 12, 13, 14,
-            19, 20, 21, 22, 23
+            19, 20, 21, 22, 23,
+            28, 29, 30
     };
 
     public TrollGUI(TrollPlugin plugin, Player target) {
@@ -34,14 +37,14 @@ public class TrollGUI extends InventoryGUI {
 
     @Override
     protected Inventory createInventory() {
-        return Bukkit.createInventory(null, 45,
+        return Bukkit.createInventory(null, 54,
                 ChatColor.DARK_RED + "Trolling: " + ChatColor.RED + target.getName());
     }
 
     @Override
     public void decorate(Player viewer) {
         ItemStack filler = buildFiller();
-        for (int i = 0; i < 45; i++) {
+        for (int i = 0; i < 54; i++) {
             final ItemStack f = filler.clone();
             addButton(i, new InventoryButton()
                     .creator(p -> f)
@@ -60,7 +63,7 @@ public class TrollGUI extends InventoryGUI {
                     }));
         }
 
-        addButton(40, new InventoryButton()
+        addButton(49, new InventoryButton()
                 .creator(p -> buildClose())
                 .consumer(e -> e.getWhoClicked().closeInventory()));
 

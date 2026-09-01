@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -31,6 +32,8 @@ public class TrollManager {
     private final Map<UUID, BukkitTask> tntTasks = new HashMap<>();
     private final Map<UUID, BukkitTask> hauntTasks = new HashMap<>();
     private final Map<UUID, BukkitTask> hotbarTasks = new HashMap<>();
+    private final Map<UUID, BukkitTask> fakeDeathTasks = new HashMap<>();
+    private final Map<UUID, BukkitTask> gravityTasks = new HashMap<>();
     private final Map<UUID, UUID> hauntVillagers = new HashMap<>();
     private final Set<UUID> hauntCooldowns = new HashSet<>();
     private final Random random = new Random();
@@ -44,6 +47,19 @@ public class TrollManager {
             "ENTITY_WITCH_AMBIENT",
             "ENTITY_ZOMBIE_AMBIENT",
             "ENTITY_SKELETON_AMBIENT"
+    };
+
+    private static final String[] DEATH_REASONS = {
+            "%s was slain by a Zombie",
+            "%s was shot by a Skeleton",
+            "%s was fireballed by a Blaze",
+            "%s tried to swim in lava",
+            "%s fell from a high place",
+            "%s was killed by a Creeper",
+            "%s was blown up by a Creeper",
+            "%s went up in flames",
+            "%s suffocated in a wall",
+            "%s was slain by a Witch"
     };
 
     public TrollManager(TrollPlugin plugin) {
@@ -74,6 +90,8 @@ public class TrollManager {
             case TNT -> startTNTTask(target);
             case HAUNT -> startHauntTask(target);
             case HOTBAR_SHUFFLE -> startHotbarShuffleTask(target);
+            case FAKE_DEATH -> startFakeDeathTask(target);
+            case GRAVITY_FLIP -> startGravityFlipTask(target);
             default -> {}
         }
     }
@@ -89,6 +107,8 @@ public class TrollManager {
                 hauntCooldowns.remove(target.getUniqueId());
             }
             case HOTBAR_SHUFFLE -> cancelTask(hotbarTasks, target.getUniqueId());
+            case FAKE_DEATH -> cancelTask(fakeDeathTasks, target.getUniqueId());
+            case GRAVITY_FLIP -> cancelTask(gravityTasks, target.getUniqueId());
             default -> {}
         }
     }
@@ -119,6 +139,8 @@ public class TrollManager {
                 case TNT -> startTNTTask(player);
                 case HAUNT -> startHauntTask(player);
                 case HOTBAR_SHUFFLE -> startHotbarShuffleTask(player);
+                case FAKE_DEATH -> startFakeDeathTask(player);
+                case GRAVITY_FLIP -> startGravityFlipTask(player);
                 default -> {}
             }
         }
@@ -246,6 +268,48 @@ public class TrollManager {
         hotbarTasks.put(uuid, task);
     }
 
+    private void startFakeDeathTask(Player target) {
+        UUID uuid = target.getUniqueId();
+        cancelTask(fakeDeathTasks, uuid);
+        BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            Player p = Bukkit.getPlayer(uuid);
+            if (p == null || !p.isOnline()) {
+                cancelTask(fakeDeathTasks, uuid);
+                return;
+            }
+            String template = DEATH_REASONS[random.nextInt(DEATH_REASONS.length)];
+            String message = String.format(template, p.getName());
+            for (Player online : Bukkit.getOnlinePlayers()) {
+                if (!online.getUniqueId().equals(uuid)) {
+                    online.sendMessage("§c" + message);
+                }
+            }
+        }, 600L, 600L);
+        fakeDeathTasks.put(uuid, task);
+    }
+
+    private void startGravityFlipTask(Player target) {
+        UUID uuid = target.getUniqueId();
+        cancelTask(gravityTasks, uuid);
+        // Launch every 7-12 seconds (140-240 ticks), using a fixed 8s interval
+        BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            Player p = Bukkit.getPlayer(uuid);
+            if (p == null || !p.isOnline()) {
+                cancelTask(gravityTasks, uuid);
+                return;
+            }
+            // Only launch if the player is on the ground to avoid stacking launches
+            if (p.isOnGround()) {
+                p.setVelocity(new Vector(
+                        (random.nextDouble() - 0.5) * 0.4,
+                        1.1 + random.nextDouble() * 0.4,
+                        (random.nextDouble() - 0.5) * 0.4
+                ));
+            }
+        }, 160L, 160L);
+        gravityTasks.put(uuid, task);
+    }
+
     private boolean isLookingAt(Player player, Entity entity) {
         Vector toEntity = entity.getLocation().add(0, 1, 0).toVector()
                 .subtract(player.getEyeLocation().toVector());
@@ -281,10 +345,14 @@ public class TrollManager {
         tntTasks.values().forEach(BukkitTask::cancel);
         hauntTasks.values().forEach(BukkitTask::cancel);
         hotbarTasks.values().forEach(BukkitTask::cancel);
+        fakeDeathTasks.values().forEach(BukkitTask::cancel);
+        gravityTasks.values().forEach(BukkitTask::cancel);
         soundTasks.clear();
         tntTasks.clear();
         hauntTasks.clear();
         hotbarTasks.clear();
+        fakeDeathTasks.clear();
+        gravityTasks.clear();
         hauntVillagers.forEach((playerUUID, villagerUUID) -> {
             Entity e = Bukkit.getEntity(villagerUUID);
             if (e != null) e.remove();

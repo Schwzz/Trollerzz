@@ -53,6 +53,21 @@ public enum TrollType {
             "&7Replaces any meat the player",
             "&7eats with &fDried Kelp&7",
             "&7the moment they finish eating."
+    )),
+    FAKE_DEATH("Fake Death", "SKELETON_SKULL", Arrays.asList(
+            "&7Broadcasts a fake death message",
+            "&7every &f30 seconds&7 as if the",
+            "&7player was slain. Only they are hidden."
+    )),
+    GRAVITY_FLIP("Gravity Flip", "FEATHER", Arrays.asList(
+            "&7Launches the player into the air",
+            "&7every few seconds, causing",
+            "&7them to take fall damage on landing."
+    )),
+    PHANTOM_INVENTORY("Phantom Inventory", "ENDER_CHEST", Arrays.asList(
+            "&7Instantly closes the player's",
+            "&7inventory every time they open it,",
+            "&7making item management impossible."
     ));
 
     private final String displayName;

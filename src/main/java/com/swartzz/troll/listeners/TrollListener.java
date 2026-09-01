@@ -14,6 +14,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -55,10 +57,6 @@ public class TrollListener implements Listener {
             "SALMON", "COOKED_SALMON",
             "TROPICAL_FISH", "PUFFERFISH",
             "ROTTEN_FLESH"
-    ));
-
-    private static final Set<String> SHIELD_MATERIALS = new HashSet<>(Arrays.asList(
-            "SHIELD"
     ));
 
     public TrollListener(TrollPlugin plugin) {
@@ -120,6 +118,16 @@ public class TrollListener implements Listener {
                 }
             }
         }
+    }
+
+    @EventHandler
+    public void onInventoryOpen(InventoryOpenEvent event) {
+        if (!(event.getPlayer() instanceof Player)) return;
+        Player player = (Player) event.getPlayer();
+        if (!plugin.getTrollManager().isActive(player.getUniqueId(), TrollType.PHANTOM_INVENTORY)) return;
+        // Only intercept the player's own inventory (not chests, GUIs, etc.)
+        if (event.getInventory().getType() != InventoryType.CRAFTING) return;
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> player.closeInventory(), 1L);
     }
 
     @EventHandler
