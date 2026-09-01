@@ -8,8 +8,8 @@ A professional, high-performance, and feature-rich Minecraft troll plugin for Sp
 
 ## ✨ Features
 
-- **Advanced GUI Framework**: Paginated player list and toggleable menus for a seamless admin experience.
-- **10 Unique Trolls**: Ranging from subtle psychological pranks to chaotic inventory management.
+- **Advanced GUI Framework**: Paginated player list and expanded 54-slot toggleable menus for a seamless admin experience.
+- **13 Unique Trolls**: Ranging from subtle psychological pranks to chaotic inventory management.
 - **Smart Logic**: Automatic cleanup on player disconnect and sophisticated stalker AI for the "Haunt" troll.
 - **Cross-Version Support**: Built using XSeries to ensure sound and material compatibility across versions.
 
@@ -27,6 +27,9 @@ A professional, high-performance, and feature-rich Minecraft troll plugin for Sp
 | **Shield Drop** | Forces the player to drop their shield when attempting to block. |
 | **Gapple Trap** | Golden Apples give Blindness and Weakness instead of buffs. |
 | **Vegetarian Curse** | Replaces all meat/fish items with Dried Kelp upon consumption. |
+| **Fake Death** | Every 30 seconds broadcasts a random death message (10 templates) to every online player except the victim — they see nothing. |
+| **Gravity Flip** | Every 8 seconds, if the player is on the ground, launches them into the air with a slight random sideways drift — enough height to deal fall damage on landing. |
+| **Phantom Inventory** | Hooks InventoryOpenEvent — specifically CRAFTING type (the player’s own inventory), then closes it 1 tick later so it flickers shut every time they try to open it. |
 
 ## 🚀 Commands & Permissions
 
